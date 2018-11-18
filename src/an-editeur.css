@@ -1,0 +1,39 @@
+
+an-editeur {
+  display: flex;
+  justify-content: flex-start;
+  align-content: center;
+  align-items: center;
+  flex-flow: column;
+  text-align: left;
+  background: #fff;
+  padding: .5em;
+  border-radius: 3px;
+  width: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.12));
+}
+
+an-editeur > .pad {
+  flex: 1 0 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-content: center;
+  align-items: center;
+  flex-flow: column;
+  text-align: left;
+  width: 100%;
+  margin: .5em;
+  white-space: pre;
+  width: 100%;
+  outline: 0;
+  border: 0;
+}
+
+an-editeur .line {
+  flex: 1 0 100%;
+  display: block;
+  white-space: pre;
+  width: 100%;
+  outline: 0;
+  border: 0;
+}

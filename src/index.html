@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anediteur</title>
+  <link rel="stylesheet" href="/an-editeur.css">
+  <script src="rilti.min.js"></script>
+  <script src="showdown.min.js"></script>
+  <script src="an-editeur.js"></script>
+<style>
+  body {
+    margin: 0;
+    display: flex;
+    justify-content: flex-start;
+    align-content: center;
+    align-items: center;
+    flex-flow: column;
+    min-height: 100vh;
+    width: 100vw;
+    max-width: 100vw;
+    background: hsl(0, 0%, 96%);
+  }
+  an-editeur {
+    margin: 1em;
+    max-width: 700px;
+  }
+</style>
+<script>new WebSocket(`ws://${location.host}/`, 'echo-protocol').onmessage = e => e.data == 'reload' && location.reload()</script>
+</head>
+<body>
+  <an-editeur cache="editor"></an-editeur>
+</body>
+</html>

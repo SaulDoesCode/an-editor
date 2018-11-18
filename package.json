@@ -1,0 +1,26 @@
+{
+  "name": "anediteur",
+  "version": "0.0.0",
+  "description": "a content editor for the web",
+  "main": "index.js",
+  "author": "Saul van der Walt",
+  "license": "MPL-2.0",
+  "scripts": {
+    "run": "node --experimental-modules index.mjs",
+    "buildjs": "./node_modules/.bin/terser ./src/an-editeur.js -o ./an-editeur.min.js",
+    "buildcss": "./node_modules/.bin/cleancss -o ./an-editeur.min.css ./src/an-editeur.css",
+    "build": "yarn run buildjs && yarn run buildcss"
+  },
+  "devDependencies": {
+    "chokidar": "^2.0.4",
+    "clean-css-cli": "^4.2.1",
+    "koa": "^2.6.2",
+    "koa-send": "^5.0.0",
+    "terser": "^3.10.11",
+    "websocket": "^1.0.28"
+  },
+  "dependencies": {
+    "rilti": "^0.9.9",
+    "showdown": "^1.9.0"
+  }
+}

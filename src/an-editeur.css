@@ -22,7 +22,6 @@ an-editeur > .pad {
   flex-flow: column;
   text-align: left;
   width: 100%;
-  margin: .5em;
   white-space: pre;
   width: 100%;
   outline: 0;
@@ -36,4 +35,8 @@ an-editeur .line {
   width: 100%;
   outline: 0;
   border: 0;
+}
+
+an-editeur .line:empty {
+  min-height: 18px;
 }

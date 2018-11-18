@@ -1,8 +1,13 @@
-const {dom, component, emitter, $} = rilti
+const {dom, component, emitter, $, run} = rilti
 const {div, span, button, section, nav, article, html} = dom
 
 const converter = new showdown.Converter()
-const md2html = (src, plain) => plain ? converter.makeHtml(src) : html(converter.makeHtml(src))
+const md2html = (src, fancy) => !fancy ? converter.makeHtml(src) : html(converter.makeHtml(src))
+
+const haltevt = e => {
+  e.preventDefault()
+  e.stopPropagation()
+}
 
 component('an-editeur', {
   methods: {
@@ -14,27 +19,19 @@ component('an-editeur', {
       }
       return content
     },
-    selectPreviousLine(el, line = el.activeLine, sel) {
+    selectPreviousLine(el, line = el.activeLine , start, end = start) {
       if (!line || !line.previousElementSibling) return
-      if (!sel) sel = selection(line)
-      else if (sel.end !== 0) return
-      el.lastActive = line
-      el.activeLine = $(el.lastActive.previousElementSibling)
-      const len = el.activeLine.textContent.length
-      if (len === 0 || len < sel.start) sel.end = sel.start = len
-      selection(el.activeLine, sel)
+      el.activeLine = $(line.previousElementSibling)
+      start != null ? el.activeLine.select(start, end) : el.activeLine.selectEnd()
       el.activeLine.focus()
+      return el.activeLine
     },
-    selectNextLine(el, line = el.activeLine, sel) {
+    selectNextLine(el, line = el.activeLine , start, end = start) {
       if (!line || !line.nextElementSibling) return
-      if (!sel) sel = selection(line)
-      else if (sel.start !== line.textContent.length) return
-      el.lastActive = line
-      el.activeLine = $(el.lastActive.nextElementSibling)
-      const len = el.activeLine.textContent.length
-      if (len === 0 || len < sel.end) sel.end = sel.start = len
-      selection(el.activeLine, sel)
+      el.activeLine = $(line.nextElementSibling)
+      start != null ? el.activeLine.select(start, end) : el.activeLine.selectStart()
       el.activeLine.focus()
+      return el.activeLine
     }
   },
   create(el) {
@@ -44,94 +41,112 @@ component('an-editeur', {
       $: el,
       contentEditable: navigator.userAgent.includes('Chrome') ? 'plaintext-only' : true,
       onkeydown(e) {
-        console.log(e)
-        const Enter = e.key === 'Enter'
+        const is = key => key === e.key
+        const Enter = is('Enter')
         if (
-          Enter || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
-          (e.key === 'Backspace' && !line.textContent.length)
-        ) {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-        if (Enter && editor.activeLine && editor.activeLine.nextElementSibling) {
-          return el.selectNextLine()
-        }
-
+          Enter ||
+          (is('Backspace') && !editor.activeLine.textContent.length)
+          ) haltevt(e)
         editor.E.emit.input(e, editor.activeLine, Enter)
       }
     })
     el.line = lineMaker(el)
     el.lines = new Set()
 
-    el.E.on.input((e, line = el.activeLine, newline) => {
+    el.E.on.input((e, line = el.activeLine , newline) => {
       if (!line) return
-      if (newline) {
-        el.lastActive = el.activeLine
+      if (newline && !line.nextElementSibling) {
         el.activeLine = el.line()
-        el.activeLine.focus()
-        return
-      }
-      if (e.key === 'ArrowUp') return el.selectPreviousLine(line)
-      else if (e.key === 'ArrowDown') return el.selectNextLine(line)
-      else if (e.key === 'ArrowLeft' && line.previousElementSibling) {
-        const len = line.previousElementSibling.textContent.length
-        const sel = selection(line)
-        if (sel.end === sel.start && sel.end === 0) {
-          return el.selectPreviousLine(line, {start: len, end: len})
-        }
-      } else if (e.key === 'ArrowRight' && line.nextElementSibling) {
-        const curlen = line.textContent.length
-        const sel = selection(line)
-        if (sel.end === sel.start && sel.end === curlen) {
-          return el.selectNextLine(line, {start: 0, end: 0})
-        }
       } else if (e.key === 'Backspace' && !line.textContent.length) {
         if (line.previousElementSibling) {
           el.activeLine = $(line.previousElementSibling)
           line.remove()
-          const allen = el.activeLine.textContent.length
-          if (allen) {
-            selection(el.activeLine(), {start: allen, end: allen})
-          }
+          el.lines.delete(line)
+          const allen = line.textContent.length
+          if (allen) el.activeLine.select(allen, allen)
+          el.activeLine.focus()
         }
       }
-      el.activeLine.focus()
     })
-
+  },
+  mount(el) {
     el.activeLine = el.line('add some text')
     el.line('add some more text')
 
-    rilti.run(() => el.activeLine.focus())
+    run(() => el.activeLine.focus())
   }
 })
 
 const lineMaker = editor => (content = '') => div.line({
   $: editor.pad,
-  onkeydown(e, line) {
-    console.log(e)
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      e.stopPropagation()
+  methods: {
+    makeActiveLine(line) {
+      editor.activeLine = line
+    },
+    caretAtEnd(line) {
+      const [start, end] = selection(line)
+      const len = line.textContent.length
+      return start === end && end === len
+    },
+    caretAtStart(line) {
+      const [start, end] = selection(line)
+      return start === end && start === 0
+    },
+    caretAt(line, start, end = start) {
+      const [s, e] = selection(line)
+      return start === s && end === e
+    },
+    selectEnd(line) {
+      const len = line.textContent.length
+      selection(line, len, len)
+    },
+    selectStart(line) {
+      selection(line, 0, 0)
+    },
+    select(line, start, end = start) {
+      const len = line.textContent.length
+      if (end > len) {
+        if (end === start) start = len
+        end = len
+      }
+      selection(line, start, end)
+    },
+  selection},
+  cycle: {
+    create(line) {
+      line.on({ focus: line.makeActiveLine, click: line.makeActiveLine })
+    },
+    mount(line) {
+      editor.lines.add(line)
+      line.activeLine = line
+      line.focus()
+      line.select(0)
+    },
+    unmount(line) {
+      editor.lines.delete(line)
     }
   },
-  cycle: {mount: line => line.focus()}
-}, line => {
-  editor.lines.add(line)
-  return content
-})
+  onkeydown(e, line) {
+    if (e.key === 'Enter') {
+      haltevt(e)
+      line.blur()
+    }
+  }
+}, content)
 
-const selection = (editable, sel) => {
+const selection = (editable, start, end = start) => {
   if (editable instanceof Function) editable = editable()
 
-  if (sel == null) {
+  if (start == null) {
     const range = window.getSelection().getRangeAt(0)
     let preSelectionRange = range.cloneRange()
     preSelectionRange.selectNodeContents(editable)
     preSelectionRange.setEnd(range.startContainer, range.startOffset)
     const start = preSelectionRange.toString().length
-    return {start, end: start + range.toString().length}
+    return [start, start + range.toString().length]
   }
-  const {start, end} = sel
+
+  console.log(`start: ${start}, end: ${end}`)
 
   let charIndex = 0
   let range = document.createRange()
@@ -166,8 +181,7 @@ const selection = (editable, sel) => {
   currentSel.addRange(range)
 }
 
-
-function setCaretPosition(editable, pos) {
+function setCaretPosition (editable, pos) {
   if (editable instanceof Function) editable = editable()
   if (editable.createTextRange) {
     const range = editable.createTextRange()

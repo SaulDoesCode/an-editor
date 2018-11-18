@@ -12,11 +12,9 @@ const haltevt = e => {
 component('an-editeur', {
   methods: {
     content(el) {
-      if (el.lines.size === 1) return [...el.lines][0].textContent.trimEnd()
+      if (el.lines.size === 1) return [...el.lines][0].textContent
       let content = ''
-      for (const line of el.lines) {
-        content += line.textContent.trimEnd() + '  \n'
-      }
+      for (const line of el.lines) content += line.textContent + '\n'
       return content
     },
     selectPreviousLine(el, line = el.activeLine , start, end = start) {

@@ -12,24 +12,24 @@ const haltevt = e => {
 component('an-editeur', {
   methods: {
     content(el) {
-      if (el.lines.size === 1) return [...el.lines][0].textContent
+      if (el.segments.size === 1) return [...el.segments][0].textContent
       let content = ''
-      for (const line of el.lines) content += line.textContent + '\n'
+      for (const segment of el.segments) content += segment.textContent + '\n'
       return content
     },
-    selectPreviousLine(el, line = el.activeLine , start, end = start) {
-      if (!line || !line.previousElementSibling) return
-      el.activeLine = $(line.previousElementSibling)
-      start != null ? el.activeLine.select(start, end) : el.activeLine.selectEnd()
-      el.activeLine.focus()
-      return el.activeLine
+    selectPreviousLine(el, segment = el.activeSeg , start, end = start) {
+      if (!segment || !segment.previousElementSibling) return
+      el.activeSeg = $(segment.previousElementSibling)
+      start != null ? el.activeSeg.select(start, end) : el.activeSeg.selectEnd()
+      el.activeSeg.focus()
+      return el.activeSeg
     },
-    selectNextLine(el, line = el.activeLine , start, end = start) {
-      if (!line || !line.nextElementSibling) return
-      el.activeLine = $(line.nextElementSibling)
-      start != null ? el.activeLine.select(start, end) : el.activeLine.selectStart()
-      el.activeLine.focus()
-      return el.activeLine
+    selectNextLine(el, segment = el.activeSeg , start, end = start) {
+      if (!segment || !segment.nextElementSibling) return
+      el.activeSeg = $(segment.nextElementSibling)
+      start != null ? el.activeSeg.select(start, end) : el.activeSeg.selectStart()
+      el.activeSeg.focus()
+      return el.activeSeg
     }
   },
   create(el) {
@@ -42,96 +42,103 @@ component('an-editeur', {
         if (!e.clipboardData || !e.clipboardData.getData) return
         let data = e.clipboardData.getData('text/plain')
         haltevt(e)
-        for (const l of data.split('\n')) el.activeLine = el.line(l)
+        if (data.includes('\n')) {
+          for (const l of data.split('\n')) el.activeSeg = el.segment(l)
+        } else {
+          editor.activeSeg.textContent += data
+          editor.activeSeg.selectEnd()
+        }
       },
       onkeydown(e) {
         const is = key => key === e.key
         const Enter = is('Enter')
-        if (e) {
-          console.log(e)
-        }
+        const Save = is('s') && e.ctrlKey
         if (
           Enter ||
-          (is('Backspace') && !editor.activeLine.textContent.length) ||
-          (is('v') && e.ctrlkey)
-          ) haltevt(e)
-        editor.E.emit.input(e, editor.activeLine, Enter)
+          (is('Backspace') && !editor.activeSeg.textContent.length) ||
+          Save
+        ) haltevt(e)
+        if (Save) {
+          editor.E.emit.Save(editor, e)
+          return
+        }
+        editor.E.emit.input(e, editor.activeSeg, Enter)
       }
     })
-    el.line = lineMaker(el)
-    el.lines = new Set()
+    el.segment = segmentMaker(el)
+    el.segments = new Set()
 
-    el.E.on.input((e, line = el.activeLine , newline) => {
-      if (!line) return
-      if (newline && !line.nextElementSibling) {
-        el.activeLine = el.line()
-      } else if (e.key === 'Backspace' && !line.textContent.length) {
-        if (line.previousElementSibling) {
-          el.activeLine = $(line.previousElementSibling)
-          line.remove()
-          el.lines.delete(line)
-          const allen = line.textContent.length
-          if (allen) el.activeLine.select(allen, allen)
-          el.activeLine.focus()
+    el.E.on.input((e, segment = el.activeSeg , newsegment) => {
+      if (!segment) return
+      if (newsegment && !segment.nextElementSibling) {
+        el.activeSeg = el.segment()
+      } else if (e.key === 'Backspace' && !segment.textContent.length) {
+        if (segment.previousElementSibling) {
+          el.activeSeg = $(segment.previousElementSibling)
+          segment.remove()
+          el.segments.delete(segment)
+          const allen = segment.textContent.length
+          if (allen) el.activeSeg.select(allen, allen)
+          el.activeSeg.focus()
         }
       }
     })
   },
   mount(el) {
-    el.activeLine = el.line('add some text')
-    el.line('add some more text')
+    el.activeSeg = el.segment('add some text')
+    el.segment('add some more text')
 
-    run(() => el.activeLine.focus())
+    run(() => el.activeSeg.focus())
   }
 })
 
-const lineMaker = editor => (content = '') => div.line({
+const segmentMaker = editor => (content = '') => div.segment({
   $: editor.pad,
   methods: {
-    makeActiveLine(line) {
-      editor.activeLine = line
+    setActiveSeg(segment) {
+      editor.activeSeg = segment
     },
-    caretAtEnd(line) {
-      const [start, end] = selection(line)
-      const len = line.textContent.length
+    caretAtEnd(segment) {
+      const [start, end] = selection(segment)
+      const len = segment.textContent.length
       return start === end && end === len
     },
-    caretAtStart(line) {
-      const [start, end] = selection(line)
+    caretAtStart(segment) {
+      const [start, end] = selection(segment)
       return start === end && start === 0
     },
-    caretAt(line, start, end = start) {
-      const [s, e] = selection(line)
+    caretAt(segment, start, end = start) {
+      const [s, e] = selection(segment)
       return start === s && end === e
     },
-    selectEnd(line) {
-      const len = line.textContent.length
-      selection(line, len, len)
+    selectEnd(segment) {
+      const len = segment.textContent.length
+      selection(segment, len, len)
     },
-    selectStart(line) {
-      selection(line, 0, 0)
+    selectStart(segment) {
+      selection(segment, 0, 0)
     },
-    select(line, start, end = start) {
-      const len = line.textContent.length
+    select(segment, start, end = start) {
+      const len = segment.textContent.length
       if (end > len) {
         if (end === start) start = len
         end = len
       }
-      selection(line, start, end)
+      selection(segment, start, end)
     },
   selection},
   cycle: {
-    create(line) {
-      line.on({ focus: line.makeActiveLine, click: line.makeActiveLine })
+    create(segment) {
+      segment.on({ focus: segment.setActiveSeg, click: segment.setActiveSeg })
     },
-    mount(line) {
-      editor.lines.add(line)
-      line.activeLine = line
-      line.focus()
-      line.select(0)
+    mount(segment) {
+      editor.segments.add(segment)
+      segment.activeSeg = segment
+      segment.focus()
+      segment.select(0)
     },
-    unmount(line) {
-      editor.lines.delete(line)
+    unmount(segment) {
+      editor.segments.delete(segment)
     }
   }
 }, content)

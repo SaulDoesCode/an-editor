@@ -9,7 +9,7 @@ const haltevt = e => {
   e.stopPropagation()
 }
 
-component('an-editeur', {
+component('an-editor', {
   methods: {
     content(el) {
       if (el.segments.size === 1) return [...el.segments][0].textContent

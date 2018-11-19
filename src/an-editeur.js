@@ -38,12 +38,22 @@ component('an-editeur', {
     el.pad = section.pad({
       $: el,
       contentEditable: navigator.userAgent.includes('Chrome') ? 'plaintext-only' : true,
+      onpaste(e) {
+        if (!e.clipboardData || !e.clipboardData.getData) return
+        let data = e.clipboardData.getData('text/plain')
+        haltevt(e)
+        for (const l of data.split('\n')) el.activeLine = el.line(l)
+      },
       onkeydown(e) {
         const is = key => key === e.key
         const Enter = is('Enter')
+        if (e) {
+          console.log(e)
+        }
         if (
           Enter ||
-          (is('Backspace') && !editor.activeLine.textContent.length)
+          (is('Backspace') && !editor.activeLine.textContent.length) ||
+          (is('v') && e.ctrlkey)
           ) haltevt(e)
         editor.E.emit.input(e, editor.activeLine, Enter)
       }
@@ -123,12 +133,6 @@ const lineMaker = editor => (content = '') => div.line({
     unmount(line) {
       editor.lines.delete(line)
     }
-  },
-  onkeydown(e, line) {
-    if (e.key === 'Enter') {
-      haltevt(e)
-      line.blur()
-    }
   }
 }, content)
 
@@ -143,9 +147,6 @@ const selection = (editable, start, end = start) => {
     const start = preSelectionRange.toString().length
     return [start, start + range.toString().length]
   }
-
-  console.log(`start: ${start}, end: ${end}`)
-
   let charIndex = 0
   let range = document.createRange()
   range.setStart(editable, 0)
@@ -177,20 +178,4 @@ const selection = (editable, start, end = start) => {
   const currentSel = window.getSelection()
   currentSel.removeAllRanges()
   currentSel.addRange(range)
-}
-
-function setCaretPosition (editable, pos) {
-  if (editable instanceof Function) editable = editable()
-  if (editable.createTextRange) {
-    const range = editable.createTextRange()
-    range.move('character', pos)
-    range.select()
-  } else {
-    if (editable.selectionStart) {
-      editable.focus()
-      editable.setSelectionRange(pos, pos)
-    } else {
-      editable.focus()
-    }
-  }
 }

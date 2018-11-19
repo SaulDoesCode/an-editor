@@ -1,5 +1,5 @@
 
-an-editeur {
+an-editor {
   display: flex;
   justify-content: flex-start;
   align-content: center;
@@ -13,7 +13,7 @@ an-editeur {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,.12));
 }
 
-an-editeur > .pad {
+an-editor > .pad {
   flex: 1 0 100%;
   display: flex;
   justify-content: flex-start;
@@ -27,7 +27,7 @@ an-editeur > .pad {
   border: 0;
 }
 
-an-editeur .segment {
+an-editor .segment {
   flex: 1 0 100%;
   display: block;
   width: 100%;
@@ -35,6 +35,6 @@ an-editeur .segment {
   border: 0;
 }
 
-an-editeur .segment:empty {
+an-editor .segment:empty {
   min-height: 18px;
 }

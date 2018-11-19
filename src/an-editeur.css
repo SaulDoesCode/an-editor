@@ -22,21 +22,19 @@ an-editeur > .pad {
   flex-flow: column;
   text-align: left;
   width: 100%;
-  white-space: pre;
   width: 100%;
   outline: 0;
   border: 0;
 }
 
-an-editeur .line {
+an-editeur .segment {
   flex: 1 0 100%;
   display: block;
-  white-space: pre;
   width: 100%;
   outline: 0;
   border: 0;
 }
 
-an-editeur .line:empty {
+an-editeur .segment:empty {
   min-height: 18px;
 }

@@ -45,8 +45,20 @@ component('an-editor', {
         if (data.includes('\n')) {
           for (const l of data.split('\n')) el.activeSeg = el.segment(l)
         } else {
-          editor.activeSeg.textContent += data
-          editor.activeSeg.selectEnd()
+          const seg = editor.activeSeg
+          const [start, end] = seg.selection()
+          if (start === seg.textContent.length) {
+            seg.textContent += data
+            seg.selectEnd()
+          } else {
+            if (start !== end) {
+              const old = seg.textContent.substring(start, end)
+              seg.textContent = seg.textContent.replace(old, data)
+            } else {
+              seg.textContent = putAtpos(seg.textContent, end, data)
+            }
+            seg.select(start + data.length)
+          }
         }
       },
       onkeydown(e) {
@@ -186,3 +198,5 @@ const selection = (editable, start, end = start) => {
   currentSel.removeAllRanges()
   currentSel.addRange(range)
 }
+
+const putAtpos = (host, pos, str) => [host.slice(0, pos), str, host.slice(pos)].join('')

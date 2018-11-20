@@ -339,7 +339,7 @@ const List = (...values) => {
       do {
         const newnode = newlist.push(node.value)
         const res = fn(node.value, newnode, newlist)
-        if (res != null && !(res instanceof List.Node)) newnode.value = res
+        if (res != null && !res.isNode) newnode.value = res
         node = node.next
       } while (newlist.length != list.length)
       return newlist
@@ -360,10 +360,10 @@ const List = (...values) => {
     push(...vals) {
       let n
       if (vals.length) for (const val of vals) {
-        n = new List.Node(val, null, null, list)
+        n = List.Node(val, null, null, list)
         if (!list.last) list.last = n.move(list.first || n, n)
         if (!list.first) list.first = n.move(n, list.last)
-        list.last = (list.first.last = list.last.next = n.move(list.first, list.last))
+        list.last = list.first.last = list.last.next = n.move(list.first, list.last)
       }
       return n
     },
@@ -381,50 +381,46 @@ const List = (...values) => {
   return list
 }
 
-List.Node = class {
-  constructor(value, next, last, list) {
-    this.value = value
-    this.next = next
-    this.last = last;
-    (this.list = list).length++
+List.Node = (value, next, last, list) => {
+  const N = {
+    isNode: true,
+    value,
+    next,
+    last,
+    move(next, last) {
+      N.next = next
+      N.last = last
+      return N
+    },
+    forward() {
+      const n = N.next.after(N.value)
+      N.delete()
+      return n
+    },
+    backward() {
+      const n = N.last.before(N.value)
+      N.delete()
+      return n
+    },
+    delete() {
+      N.next.last = N.last
+      N.last.next = N.next
+      if (N === list.first) list.first = N.last
+      else if (N === list.last) list.last = N.next
+      list.length--
+      N.value = list = null
+    },
+    after(val) {
+      const n = (N.next.last = List.Node(val, N.next, N, list))
+      if (N === list.last) list.last = n
+      return N.next = n
+    },
+    before(val) {
+      const n = (N.last.next = List.Node(val, N, N.last, list))
+      if (N === list.first) list.first = n
+      return N.last = n
+    }
   }
-  move(next, last) {
-    this.next = next
-    this.last = last
-    return this
-  }
-  delete() {
-    this.next.last = this.last
-    this.last.next = this.next
-    if (this === this.list.first) this.list.first = this.last
-    else if (this === this.list.last) this.list.last = this.next
-    this.value = null
-    this.list.length--
-    return this
-  }
-  after(val) {
-    const n = (this.next.last = new List.Node(val, this.next, this, this.list))
-    if (this === this.list.last) this.list.last = n
-    return this.next = n
-  }
-  before(val) {
-    const n = (this.last.next = new List.Node(val, this, this.last, this.list))
-    if (this === this.list.first) this.list.first = n
-    return this.last = n
-  }
+  list.length++
+  return N
 }
-
-/*transfer(list, dupe) {
-  let i = 0
-  this.list.each((_, n) => {
-    if (n === this) return false
-    i++
-  })
-  if (i > list.length) return list.push(this.value)
-  let x = 0
-  list.each((_, n) => {
-    if (x === i - 1) n.after(this.value)
-    x++
-  })
-  if (!dupe) this.delete()
-}*/

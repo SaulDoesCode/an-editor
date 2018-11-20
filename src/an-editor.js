@@ -309,7 +309,7 @@ const selection = (editable, start, end = start) => {
   currentSel.addRange(range)
 }
 
-const putAtpos = (host, pos, str) => [host.slice(0, pos), str, host.slice(pos)].join('')
+const putAtpos = (host, pos, str) => host.slice(0, pos) + str + host.slice(pos)
 
 const List = (...values) => {
   const list = {

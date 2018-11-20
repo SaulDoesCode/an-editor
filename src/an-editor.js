@@ -340,8 +340,8 @@ const List = () => {
       return node
     },
     delete(val) {
-      const includes = list.has(val)
-      if (includes) includes.node.delete()
+      const node = list.find(val)
+      if (node) node.delete()
       return list
     },
     push(...vals) {

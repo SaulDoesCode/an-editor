@@ -311,25 +311,38 @@ const selection = (editable, start, end = start) => {
 
 const putAtpos = (host, pos, str) => [host.slice(0, pos), str, host.slice(pos)].join('')
 
-const List = () => {
+const List = (...values) => {
   const list = {
     length: 0,
-    each(fn, node = list.first, until = node, dir = 'next') {
+    each(fn, node = list.first, dir = 'next') {
       let l = list.length
-      if (!fn || !node || !l) return
-      while(l--) {
+      if (fn && node && l) while(l--) {
         if (fn(node.value, node, list) === false) break
         node = node[dir]
       }
       return list
     },
-    loopback: (fn, node = list.last, until = node, dir = 'last') => list.each(fn, node, until, dir),
+    loopback: (fn, node = list.last, dir = 'last') => list.each(fn, node, dir),
     [Symbol.iterator]() {
       let value = list.first
       const until = value
-      return {
-        next: () => ({value, done: (value = value.next) === until})
-      }
+      return {next: () => ({value, done: (value = value.next) === until})}
+    },
+    get values() {
+      const values = []
+      let node = list.first
+      while (values.push(node.value) !== list.length) node = node.next
+      return values
+    },
+    map(fn, node = list.first) {
+      const newlist = List()
+      do {
+        const newnode = newlist.push(node.value)
+        const res = fn(node.value, newnode, newlist)
+        if (res != null && !(res instanceof List.Node)) newnode.value = res
+        node = node.next
+      } while (newlist.length != list.length)
+      return newlist
     },
     has(val, node = list.last, until = node) {
       while (node.value !== val) if ((node = node.last) === until) return false
@@ -350,7 +363,6 @@ const List = () => {
         n = new List.Node(val, null, null, list)
         if (!list.last) list.last = n.move(list.first || n, n)
         if (!list.first) list.first = n.move(n, list.last)
-
         list.last = (list.first.last = list.last.next = n.move(list.first, list.last))
       }
       return n
@@ -365,6 +377,7 @@ const List = () => {
     }
   }
 
+  list.push(...values)
   return list
 }
 
@@ -379,20 +392,6 @@ List.Node = class {
     this.next = next
     this.last = last
     return this
-  }
-  transfer(list, dupe) {
-    let i = 0
-    this.list.each((_, n) => {
-      if (n === this) return false
-      i++
-    })
-    if (i > list.length) return list.push(this.value)
-    let x = 0
-    list.each((_, n) => {
-      if (x === i - 1) n.after(this.value)
-      x++
-    })
-    if (!dupe) this.delete()
   }
   delete() {
     this.next.last = this.last
@@ -414,3 +413,18 @@ List.Node = class {
     return this.last = n
   }
 }
+
+/*transfer(list, dupe) {
+  let i = 0
+  this.list.each((_, n) => {
+    if (n === this) return false
+    i++
+  })
+  if (i > list.length) return list.push(this.value)
+  let x = 0
+  list.each((_, n) => {
+    if (x === i - 1) n.after(this.value)
+    x++
+  })
+  if (!dupe) this.delete()
+}*/

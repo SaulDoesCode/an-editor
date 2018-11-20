@@ -11,35 +11,6 @@ const haltevt = e => {
 
 component('an-editor', {
   props: {
-    sourcing: el => {
-      const sourcing = {
-        levels: 15,
-        mutations: [],
-        add(state) {
-          if (sourcing.mutations.includes(state)) return
-          sourcing.mutations.push(state)
-          if (sourcing.mutations.length > sourcing.levels) {
-            sourcing.mutations.shift()
-          }
-        },
-        del(state) {
-          const i = sourcing.mutations.indexOf(state)
-          if (i !== -1) sourcing.mutations.splice(i, 1)
-        },
-        get last() {
-          return sourcing.mutations[sourcing.mutations.length - 1]
-        },
-        get lastIndex() {
-          return sourcing.mutations.length - 1
-        },
-        popLast() {
-          const last = sourcing.last
-          sourcing.del(last)
-          return last
-        }
-      }
-      return sourcing
-    },
     accessors: {
       content: {
         get(el) {
@@ -79,55 +50,6 @@ component('an-editor', {
       start != null ? el.activeSeg.select(start, end) : el.activeSeg.selectStart()
       el.activeSeg.focus()
       return el.activeSeg
-    },
-    mutate(el, fn) {
-      el.sourcing.add(el.captureState())
-      fn(el.activeSeg, el.segments, el)
-    },
-    undo(el) {
-      if (!el.sourcing.mutations.length) return
-      if (el.undoLevel == null) el.undoLevel = 0
-      const state = el.sourcing.mutations[el.sourcing.lastIndex - el.undoLevel]
-      if (!state) return
-      el.sourcing.add(el.captureState())
-      el.restoreState(state)
-      el.undoLevel = 1
-    },
-    redo(el) {
-      if (!el.sourcing.mutations.length) return
-      if (el.undoLevel == null) return
-      const state = el.sourcing.mutations[el.sourcing.lastIndex - el.undoLevel]
-      if (!state) return
-      el.restoreState(state)
-      el.undoLevel--
-      if (el.undoLevel === 0) el.undoLevel = null
-    },
-    captureState(el) {
-      const state = {
-        active: el.activeSeg.textContent,
-        activeSelection: el.activeSeg.selection(),
-        segments: []
-      }
-      for (const s of el.segments) state.segments.push(s.textContent)
-      return state
-    },
-    restoreState(el, {active, activeSelection, segments}) {
-      if (segments.length !== el.segments.size) {
-        el.clearEditor()
-        for (const s of segments) {
-          el.activeSeg = el.segment(s)
-          if (s === active) {
-            run(() => el.activeSeg.select(...activeSelection))
-          }
-        }
-      } else {
-        let i = 0
-        for (const seg of el.segments) {
-          (el.activeSeg = seg).textContent = segments[i]
-          if (segments[0] === active) el.activeSeg.select(...activeSelection)
-          i++
-        }
-      }
     }
   },
   create(el) {
@@ -141,25 +63,23 @@ component('an-editor', {
         let data = e.clipboardData.getData('text/plain')
         haltevt(e)
         if (!data.length) return
-        editor.mutate(seg => {
-          if (data.includes('\n')) {
-            for (const l of data.split('\n')) el.activeSeg = el.segment(l)
+        if (data.includes('\n')) {
+          for (const l of data.split('\n')) el.activeSeg = el.segment(l)
+        } else {
+          const [start, end] = seg.selection()
+          if (start === seg.textContent.length) {
+            seg.textContent += data
+            seg.selectEnd()
           } else {
-            const [start, end] = seg.selection()
-            if (start === seg.textContent.length) {
-              seg.textContent += data
-              seg.selectEnd()
+            if (start !== end) {
+              const old = seg.textContent.substring(start, end)
+              seg.textContent = seg.textContent.replace(old, data)
             } else {
-              if (start !== end) {
-                const old = seg.textContent.substring(start, end)
-                seg.textContent = seg.textContent.replace(old, data)
-              } else {
-                seg.textContent = putAtpos(seg.textContent, end, data)
-              }
-              seg.select(start + data.length)
+              seg.textContent = putAtpos(seg.textContent, end, data)
             }
+            seg.select(start + data.length)
           }
-        })
+        }
       },
       onkeydown(e) {
         const is = key => key === e.key
@@ -188,19 +108,15 @@ component('an-editor', {
     el.E.on.input((e, segment = el.activeSeg , newsegment) => {
       if (!segment) return
       if (newsegment && !segment.nextElementSibling) {
-        el.mutate(() => {
-          el.activeSeg = el.segment()
-        })
+        el.activeSeg = el.segment()
       } else if (e.key === 'Backspace' && !segment.textContent.length) {
         if (segment.preiousElementSibling) {
-          el.mutate(() => {
-            el.activeSeg = $(segment.preiousElementSibling)
-            segment.remove()
-            el.segments.delete(segment)
-            const allen = segment.textContent.length
-            if (allen) el.activeSeg.select(allen, allen)
-            el.activeSeg.focus()
-          })
+          el.activeSeg = $(segment.preiousElementSibling)
+          segment.remove()
+          el.segments.delete(segment)
+          const allen = segment.textContent.length
+          if (allen) el.activeSeg.select(allen, allen)
+          el.activeSeg.focus()
         }
       }
     })

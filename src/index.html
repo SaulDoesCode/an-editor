@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="/an-editor.css">
   <script src="rilti.min.js"></script>
   <script src="showdown.min.js"></script>
-  <script src="an-editor.js"></script>
+  <script src="/list.js"></script>
+  <script defer async src="/raw.js"></script>
 <style>
   body {
     margin: 0;
@@ -29,6 +30,6 @@
 <script>new WebSocket(`ws://${location.host}/`, 'echo-protocol').onmessage = e => e.data == 'reload' && location.reload()</script>
 </head>
 <body>
-  <an-editor cache="editor"></an-editor>
+  <an-editor></an-editor>
 </body>
 </html>

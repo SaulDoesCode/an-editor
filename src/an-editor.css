@@ -27,7 +27,7 @@ an-editor > .pad {
   border: 0;
 }
 
-an-editor .segment {
+an-editor seg-ment {
   flex: 1 0 100%;
   display: block;
   width: 100%;
@@ -35,6 +35,6 @@ an-editor .segment {
   border: 0;
 }
 
-an-editor .segment:empty {
+an-editor seg-ment:empty {
   min-height: 18px;
 }

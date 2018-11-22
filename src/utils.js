@@ -45,6 +45,10 @@ const selection = (editable, start, end = start) => {
 const putAtpos = (host, pos, str) => host.slice(0, pos) + str + host.slice(pos)
 const splitAt = (host, pos) => [host.slice(0, pos), host.slice(pos)]
 
+const uid = (template = 'xxxxyxxx') => template.replace(/[xy]/g, c => {
+  const r = Math.random() * 16 | 0
+  return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+})
 
 const haltevt = e => {
   e.preventDefault()

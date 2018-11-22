@@ -43,6 +43,8 @@ const selection = (editable, start, end = start) => {
 }
 
 const putAtpos = (host, pos, str) => host.slice(0, pos) + str + host.slice(pos)
+const splitAt = (host, pos) => [host.slice(0, pos), host.slice(pos)]
+
 
 const haltevt = e => {
   e.preventDefault()

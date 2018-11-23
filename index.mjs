@@ -61,6 +61,7 @@ app.use(async ctx => {
   console.log(ctx.path)
   const filepath = ctx.path === '/' ? '/src/index.html' :
     ctx.path.includes('rilti.min.js') ? '/node_modules/rilti/dist/rilti.min.js' :
+    ctx.path.includes('rilti.js') ? '/node_modules/rilti/dist/rilti.js' :
     ctx.path.includes('showdown.min.js') ? '/node_modules/showdown/dist/showdown.min.js' :
     ctx.path.replace('/', '/src/')
 
